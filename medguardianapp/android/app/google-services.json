@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "518397406148",
+    "project_id": "testdatabase-d0f5b",
+    "storage_bucket": "testdatabase-d0f5b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:518397406148:android:5271f09e91a55216be5291",
+        "android_client_info": {
+          "package_name": "com.MTechX.medguardianapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "518397406148-ugiddv97pj6rgbsg6bvmgnj28t2n4i2q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.MTechX.medguardianapp",
+            "certificate_hash": "8dd5f213f172d53fe7f31d2d947aaae9ecc4e349"
+          }
+        },
+        {
+          "client_id": "518397406148-bd5g63cg51asqokh8igtkimoksbprbo0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDW7xqKPpiNPOWfi_hfCjIRl-MwFVU3yME"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "518397406148-bd5g63cg51asqokh8igtkimoksbprbo0.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
