@@ -1,0 +1,22 @@
+// This is NOT a standalone file — merge these keys into your project's
+// existing top-level firebase.json (the one FlutterFire CLI created next to
+// your pubspec.yaml). If you don't have one yet, `firebase init` in your
+// project root and select "Functions" + "Firestore", then add this.
+{
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log"
+      ]
+    }
+  ],
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}
