@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+    // A caregiver is "linked" to an elderly user when links/{elderlyId}_{caregiverId} exists.
+    function isLinked(uid) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/links/$(uid + '_' + request.auth.uid));
+    }
+    function onlyChanges(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    // ── Profiles ──────────────────────────────────────────────────────
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isLinked(uid);
+      allow create: if isOwner(uid);
+      // Linked caregivers may only set/move the home safe zone (incl. its address).
+      allow update: if isOwner(uid) ||
+        (isLinked(uid) && onlyChanges(['homeLat', 'homeLng', 'safeRadiusM', 'homeAddress']));
+      allow delete: if false;
+
+      // Data written by the elderly user, readable by linked caregivers.
+      match /medications/{id}      { allow read: if isOwner(uid) || isLinked(uid); allow write: if isOwner(uid); }
+      match /doseLogs/{id}         { allow read: if isOwner(uid) || isLinked(uid); allow write: if isOwner(uid); }
+      match /appointments/{id}     { allow read: if isOwner(uid) || isLinked(uid); allow write: if isOwner(uid); }
+      match /symptoms/{id}         { allow read: if isOwner(uid) || isLinked(uid); allow write: if isOwner(uid); }
+      match /vitals/{id}           { allow read: if isOwner(uid) || isLinked(uid); allow write: if isOwner(uid); }
+      match /location/{id}         { allow read: if isOwner(uid) || isLinked(uid); allow write: if isOwner(uid); }
+      match /locationHistory/{id}  { allow read: if isOwner(uid) || isLinked(uid); allow write: if isOwner(uid); }
+
+      // Lets the user trigger a test push to their own phone (handled by a Cloud Function).
+      match /pushTests/{id} { allow create: if isOwner(uid); }
+
+      // Alerts: created by the elderly user's device; caregivers may only acknowledge.
+      match /alerts/{id} {
+        allow read: if isOwner(uid) || isLinked(uid);
+        allow create, delete: if isOwner(uid);
+        allow update: if isOwner(uid) || (isLinked(uid) && onlyChanges(['acknowledged']));
+      }
+    }
+
+    // ── Push tokens ───────────────────────────────────────────────────
+    // One doc per device token, owned by exactly one user. Registering a token
+    // re-assigns it to the current user, so a shared phone never leaks pushes.
+    match /fcmTokens/{token} {
+      allow read, list: if false;
+      allow create, update: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    // ── Linking ───────────────────────────────────────────────────────
+    // linkCodes/{code}: lets a caregiver resolve a 6-digit code (single get only, no listing).
+    match /linkCodes/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && request.resource.data.elderlyId == request.auth.uid;
+      allow update, delete: if signedIn() && resource.data.elderlyId == request.auth.uid;
+    }
+
+    // links/{elderlyId}_{caregiverId}
+    match /links/{id} {
+      allow read: if signedIn() &&
+        (resource.data.elderlyId == request.auth.uid || resource.data.caregiverId == request.auth.uid);
+      // A caregiver can only create their own link, and only with a code that really belongs to that elderly user.
+      allow create: if signedIn() &&
+        request.resource.data.caregiverId == request.auth.uid &&
+        id == request.resource.data.elderlyId + '_' + request.auth.uid &&
+        get(/databases/$(database)/documents/linkCodes/$(request.resource.data.code)).data.elderlyId == request.resource.data.elderlyId;
+      allow update: if false;
+      // Either side can end the link.
+      allow delete: if signedIn() &&
+        (resource.data.elderlyId == request.auth.uid || resource.data.caregiverId == request.auth.uid);
+    }
+  }
+}
